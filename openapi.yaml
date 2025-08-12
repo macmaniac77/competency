@@ -4,13 +4,16 @@ info:
   version: "1.0.1"
   description: Endpoints for posting answers and retrieving assessment results.
 servers:
-  - url: https://YOUR-SERVICE.koyeb.app   # <-- Change to your deployed HTTPS base URL
+  - url: https://valid-brandea-boathousevending-ce31ef07.koyeb.app
+# To require an API key, uncomment the security block below and add
+# `security` entries on the operations that should be protected.
+# security:
+#   - ApiKeyAuth: []
 paths:
   /submit_answer:
     post:
       operationId: submitAnswer
       description: Receive one answer + the model’s scoring/notes.
-      security: [{ ApiKeyAuth: [] }]
       requestBody:
         required: true
         content:
@@ -29,7 +32,6 @@ paths:
     get:
       operationId: getResults
       description: Get rollup when enough questions are answered.
-      security: [{ ApiKeyAuth: [] }]
       parameters:
         - in: query
           name: assessment_id
