@@ -1,63 +1,87 @@
-# Control Assessment API (FastAPI)
+# Control Engineer Assessment System
 
-Fast, minimal backend for your GPT Actions–driven **Control Engineer Assessment**.
-- **POST** `/submit_answer` – record a single answer + model assessment
-- **GET** `/results` – fetch rollup when enough answers are in
-- **GET** `/healthz` – health check
+This project delivers a lightweight yet durable platform for evaluating control engineers. It pairs a FastAPI service (for GPT Actions) with a Next.js admin dashboard. The system records answers, rolls up results, and lets reviewers override and export outcomes.
 
-## Quick start (local)
+## Mission
+- Ask technical questions and score responses in real time.
+- Post each answer and model score to the API via GPT Actions.
+- Roll up the results and produce a clean report.
+- Give reviewers a dashboard to audit, override, and export data.
+
+## Architecture
+```
+GPT ↔ Actions (OpenAPI) → FastAPI service → DB
+Admin Dashboard (Next.js + Tailwind + shadcn/ui) → API (read + admin routes)
+```
+- **Public API**: `/submit_answer`, `/results`, `/healthz`
+- **Admin API**: `/sessions`, `/admin/answers/{assessment_id}/{answer_id}`, `/export/csv`
+- **Dashboard**: lists sessions, drills into answers, overrides scores, exports CSV, regenerates summaries.
+- **Hosting**: Koyeb (API) and Vercel (dashboard). `openapi.yaml` is served statically for GPT “Import from URL”.
+
+## Repo structure
+```
+/api
+  main.py
+  models.py
+  db.py
+  routers/
+    answers.py
+    results.py
+    admin.py
+  middleware/
+    auth.py
+    idempotency.py
+  openapi.yaml
+  requirements.txt
+/web
+  app/
+    page.tsx        # sessions list
+    s/[id]/page.tsx # session detail
+    policy/page.tsx
+  components/*      # shadcn/ui
+  lib/api.ts
+  .env.example
+```
+
+## Quick start – API
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r api/requirements.txt
 export API_KEY=dev-key   # set your real key in prod
-uvicorn main:app --reload
-# test:
+uvicorn api.main:app --reload
+# smoke test
 curl -H "x-api-key: $API_KEY" http://127.0.0.1:8000/healthz
 ```
 
-## Deploy: Koyeb (free, recommended)
-1. Push this repo to GitHub.
-2. In Koyeb: **Create Web Service → GitHub → select this repo**.
-3. Set **Run command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-4. Add **Environment Variable**: `API_KEY` → your secret.
-5. Deploy. Your API will be at `https://<service>.<region>.koyeb.app`.
-
-> **OpenAPI for GPT “Import from URL”**: Update `openapi.yaml` `servers.url` to your Koyeb URL and push. Then in GPT Builder → **Configure → Actions → Add action → Import from URL** and paste the raw URL to your `openapi.yaml` (e.g., GitHub raw link).
-
-## Deploy: Render (free web service, cold starts possible)
-1. Create **Web Service** from this repo.
-2. Set **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-3. Add `API_KEY` env var. Deploy. Your API will be at `https://<service>.onrender.com`.
-   - Note: Free tier may sleep; first request can take ~30–60s.
-
-## Endpoints
-- `GET /healthz` → `{"ok": true}`
-- `POST /submit_answer` (requires `x-api-key`)
-  ```json
-  {
-    "assessment_id": "abc123",
-    "question_id": "Q_01",
-    "answer_text": "Ladder uses OTE with seal-in...",
-    "model_score": 0.86,
-    "rubric": {"clarity": 0.9},
-    "meta": {"duration_ms": 42000, "difficulty": "advanced"}
-  }
-  ```
-- `GET /results?assessment_id=abc123&include_details=false`
-
-## cURL smoke test
+## Quick start – Dashboard
+The dashboard is a basic Next.js skeleton.
 ```bash
-export BASE=https://YOUR-SERVICE.koyeb.app
-export KEY=YOUR-API-KEY
-
-curl -s -H "x-api-key: $KEY" "$BASE/healthz"
-
-curl -s -X POST "$BASE/submit_answer"   -H "x-api-key: $KEY" -H "Content-Type: application/json"   -d '{"assessment_id":"abc123","question_id":"Q1","answer_text":"42","model_score":0.9,"meta":{"difficulty":"basic"}}'
-
-curl -s -H "x-api-key: $KEY" "$BASE/results?assessment_id=abc123"
+cd web
+npm install
+npm run dev
 ```
 
+## Deploying
+1. Push this repo to GitHub.
+2. **API** on Koyeb:
+   - Run command: `uvicorn api.main:app --host 0.0.0.0 --port $PORT`
+   - Env var: `API_KEY` with your secret.
+3. **Dashboard** on Vercel:
+   - Set `NEXT_PUBLIC_API_BASE` to your deployed API URL.
+4. Update `api/openapi.yaml` `servers.url` to your API base and expose the raw file for GPT “Import from URL”.
+
+## API surface (excerpt)
+- `POST /submit_answer` – record a single answer + model score.
+- `GET /results?assessment_id=...&include_details=true`
+- `GET /healthz` – health check.
+- `GET /sessions` – list sessions with basic stats.
+- `GET /sessions/{assessment_id}` – fetch answers in a session.
+- `PATCH /admin/answers/{assessment_id}/{answer_id}` – override an answer.
+- `GET /export/csv?assessment_id=...` – CSV export.
+
+All data endpoints require `x-api-key` authentication. Health checks are open. `Idempotency-Key` headers are supported on write routes.
+
 ## Notes
-- Keep requests fast (<45s) to satisfy GPT Actions timeouts.
-- `API_KEY` is checked via `x-api-key` header.
-- Storage is in-memory for simplicity; swap `DB` with a real store when ready.
+- Storage is in-memory for now; swap in Postgres or SQLite for production.
+- Keep request handling under 45s to satisfy GPT Action timeouts.
+- Privacy policy lives at `/policy` on the dashboard and should be hosted on the same domain.
