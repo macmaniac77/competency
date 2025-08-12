@@ -1,11 +1,16 @@
 import os
+from pathlib import Path
 from typing import Optional, Dict, Any, List
+
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 API_KEY = os.getenv("API_KEY", "dev-key")
 
 app = FastAPI(title="Control Assessment API", version="1.0.1")
+
+BASE_DIR = Path(__file__).resolve().parent
 
 # Simple in-memory store; replace with a DB for production
 DB: Dict[str, List[Dict[str, Any]]] = {}
@@ -21,6 +26,12 @@ class Submit(BaseModel):
 def require_auth(x_api_key: Optional[str] = Header(None)):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="invalid api key")
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    """Serve a tiny static page for manual testing."""
+    return FileResponse(BASE_DIR / "static" / "index.html")
 
 @app.get("/healthz")
 def healthz():
