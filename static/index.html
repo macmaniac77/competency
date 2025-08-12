@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Control Assessment Viewer</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: auto; }
+    textarea { width: 100%; height: 4em; }
+    pre { background: #f0f0f0; padding: 1em; }
+    section { margin-bottom: 2em; }
+  </style>
+</head>
+<body>
+  <h1>Control Assessment API Demo</h1>
+
+  <section id="submit">
+    <h2>Submit Answer</h2>
+    <form id="submit-form">
+      <label>API Key: <input type="text" id="submit-key" /></label><br />
+      <label>Assessment ID: <input type="text" id="assessment-id" /></label><br />
+      <label>Question ID: <input type="text" id="question-id" /></label><br />
+      <label>Answer Text:<br />
+        <textarea id="answer-text"></textarea>
+      </label><br />
+      <label>Model Score: <input type="number" step="0.01" id="model-score" /></label><br />
+      <label>Difficulty:
+        <select id="difficulty">
+          <option value="">(optional)</option>
+          <option value="basic">basic</option>
+          <option value="intermediate">intermediate</option>
+          <option value="advanced">advanced</option>
+        </select>
+      </label><br />
+      <button type="submit">Submit</button>
+    </form>
+    <pre id="submit-output"></pre>
+  </section>
+
+  <section id="results">
+    <h2>Fetch Results</h2>
+    <form id="results-form">
+      <label>API Key: <input type="text" id="results-key" /></label><br />
+      <label>Assessment ID: <input type="text" id="results-assessment-id" /></label><br />
+      <label>Include Details? <input type="checkbox" id="include-details" /></label><br />
+      <button type="submit">Get Results</button>
+    </form>
+    <pre id="results-output"></pre>
+  </section>
+
+  <script>
+    document.getElementById('submit-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const key = document.getElementById('submit-key').value;
+      const payload = {
+        assessment_id: document.getElementById('assessment-id').value,
+        question_id: document.getElementById('question-id').value,
+        answer_text: document.getElementById('answer-text').value,
+        model_score: parseFloat(document.getElementById('model-score').value),
+        meta: {}
+      };
+      const diff = document.getElementById('difficulty').value;
+      if (diff) payload.meta.difficulty = diff;
+      const res = await fetch('/submit_answer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key
+        },
+        body: JSON.stringify(payload)
+      });
+      document.getElementById('submit-output').textContent = await res.text();
+    });
+
+    document.getElementById('results-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const key = document.getElementById('results-key').value;
+      const id = document.getElementById('results-assessment-id').value;
+      const include = document.getElementById('include-details').checked;
+      const res = await fetch(`/results?assessment_id=${encodeURIComponent(id)}&include_details=${include}`, {
+        headers: {
+          'x-api-key': key
+        }
+      });
+      document.getElementById('results-output').textContent = await res.text();
+    });
+  </script>
+</body>
+</html>

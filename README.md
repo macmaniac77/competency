@@ -4,6 +4,7 @@ Fast, minimal backend for your GPT Actions–driven **Control Engineer Assessmen
 - **POST** `/submit_answer` – record a single answer + model assessment
 - **GET** `/results` – fetch rollup when enough answers are in
 - **GET** `/healthz` – health check
+- **GET** `/` – lightweight HTML page for manual testing
 
 ## Quick start (local)
 ```bash
@@ -11,6 +12,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 export API_KEY=dev-key   # set your real key in prod
 uvicorn main:app --reload
+# open http://127.0.0.1:8000/ in a browser for a simple web UI
 # test:
 curl -H "x-api-key: $API_KEY" http://127.0.0.1:8000/healthz
 ```
