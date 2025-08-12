@@ -5,6 +5,7 @@ Fast, minimal backend for your GPT Actions–driven **Control Engineer Assessmen
 - **GET** `/results` – fetch rollup when enough answers are in
 - **GET** `/healthz` – health check
 - **GET** `/` – lightweight HTML page for manual testing
+- **GET** `/answers` – simple HTML viewer for submitted answers
 
 ## Quick start (local)
 ```bash

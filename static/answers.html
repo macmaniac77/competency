@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Submitted Answers Viewer</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 0.3em; }
+  </style>
+</head>
+<body>
+  <h1>Submitted Answers</h1>
+  <form id="load-form">
+    <label>API Key: <input type="text" id="api-key" /></label><br />
+    <label>Assessment ID: <input type="text" id="assessment-id" /></label><br />
+    <button type="submit">Load</button>
+  </form>
+
+  <table id="results-table">
+    <thead>
+      <tr><th>Question ID</th><th>Answer</th><th>Score</th><th>Difficulty</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    document.getElementById('load-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const key = document.getElementById('api-key').value;
+      const id = document.getElementById('assessment-id').value;
+      const res = await fetch(`/results?assessment_id=${encodeURIComponent(id)}&include_details=true`, {
+        headers: { 'x-api-key': key }
+      });
+      const data = await res.json();
+      const tbody = document.querySelector('#results-table tbody');
+      tbody.innerHTML = '';
+      (data.details || []).forEach(row => {
+        const diff = (row.meta && row.meta.difficulty) || '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${row.question_id}</td><td>${row.answer_text}</td><td>${row.model_score}</td><td>${diff}</td>`;
+        tbody.appendChild(tr);
+      });
+    });
+  </script>
+</body>
+</html>
