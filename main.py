@@ -34,6 +34,12 @@ def index():
     """Serve a tiny static page for manual testing."""
     return FileResponse(BASE_DIR / "static" / "index.html")
 
+
+@app.get("/answers", include_in_schema=False)
+def answers():
+    """Serve a page that displays submitted answers."""
+    return FileResponse(BASE_DIR / "static" / "answers.html")
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
