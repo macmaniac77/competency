@@ -6,7 +6,8 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-API_KEY = os.getenv("API_KEY", "dev-key")
+# When API_KEY is unset, auth checks are skipped.
+API_KEY = os.getenv("API_KEY")
 
 app = FastAPI(title="Control Assessment API", version="1.0.1")
 
@@ -24,7 +25,7 @@ class Submit(BaseModel):
     meta: Optional[Dict[str, Any]] = None
 
 def require_auth(x_api_key: Optional[str] = Header(None)):
-    if x_api_key != API_KEY:
+    if API_KEY and x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="invalid api key")
 
 
