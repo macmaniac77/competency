@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: Control Assessment API
+  version: "1.0.1"
+  description: Endpoints for posting answers and retrieving assessment results.
+servers:
+  - url: https://YOUR-SERVICE.koyeb.app   # <-- Change to your deployed HTTPS base URL
+paths:
+  /submit_answer:
+    post:
+      operationId: submitAnswer
+      description: Receive one answer + the model’s scoring/notes.
+      security: [{ ApiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAnswerRequest'
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitAnswerResponse'
+
+  /results:
+    get:
+      operationId: getResults
+      description: Get rollup when enough questions are answered.
+      security: [{ ApiKeyAuth: [] }]
+      parameters:
+        - in: query
+          name: assessment_id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: include_details
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: Summarized results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultsResponse'
+
+  /healthz:
+    get:
+      operationId: healthz
+      description: Health check endpoint.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+  schemas:
+    Difficulty:
+      type: string
+      enum: [basic, intermediate, advanced]
+
+    SubmitAnswerRequest:
+      type: object
+      required: [assessment_id, question_id, answer_text, model_score]
+      properties:
+        assessment_id: { type: string }
+        question_id:   { type: string }
+        answer_text:   { type: string }
+        model_score:   { type: number }
+        rubric:
+          type: object
+          additionalProperties: true
+        meta:
+          type: object
+          properties:
+            duration_ms: { type: integer }
+            difficulty:  { $ref: '#/components/schemas/Difficulty' }
+
+    SubmitAnswerResponse:
+      type: object
+      properties:
+        accepted: { type: boolean }
+        count:    { type: integer }
+
+    ResultsSummary:
+      type: object
+      additionalProperties: true
+      properties:
+        basic_pct: { type: number }
+        intermediate_pct: { type: number }
+        advanced_pct: { type: number }
+
+    ResultsResponse:
+      type: object
+      required: [assessment_id, total, summary]
+      properties:
+        assessment_id: { type: string }
+        total:         { type: integer }
+        avg_score:     { type: number }
+        summary:       { $ref: '#/components/schemas/ResultsSummary' }
+        details:
+          type: array
+          items:
+            type: object
